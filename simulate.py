@@ -19,8 +19,6 @@ df_recommendations = pd.read_csv(
     'recommendations.csv').sort_values(by='date_str')
 tickers = df_recommendations['ticker'].unique()
 
-buys = [{'SAMPO.HE': [start_date]}]
-sells = [{'SAMPO.HE': [end_date]}]
 df = pd.DataFrame(columns=tickers)
 for ticker in tickers:
     data = read_data(ticker, start_date=start_date,

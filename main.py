@@ -49,16 +49,17 @@ df_buy_and_hold_rebalanced.loc[:, sum_col] = df_buy_and_hold_rebalanced.sum(
 
 df_gains_result = pd.DataFrame(
     columns=['add', 'reduce', 'buy-hold', 'buy-hold-rebal', 'recomm', 'recomm-rebal'])
-for add in [x / 10.0 for x in range(1, 11, 1)]:
-    for reduce in [x / 10.0 for x in range(1, int(add*10) + 1, 1)]:
-        df_recommendations = get_recommendations(
-            filename, recommendations_dict).sort_values(by='date_str')
+divider = 50.0
+for add in [x / divider for x in range(1, int(divider/5), 1)]:
+    for reduce in [x / divider for x in range(0, int(add*divider)+1, 1)]:
         recommendations_dict = {
             'BUY': 1.0,
             'ADD': add,
             'REDUCE': reduce,
             'SELL': 0.0
         }
+        df_recommendations = get_recommendations(
+            filename, recommendations_dict).sort_values(by='date_str')
         df_positions = get_recommended_positions(
             df_day_gain, df_recommendations)
         df_by_recommendations = simulate_by_recommendations(

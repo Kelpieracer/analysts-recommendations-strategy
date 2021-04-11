@@ -64,6 +64,9 @@ def simulate_by_recommendations(df_day_gain, df_positions, df_recommendations):
                     positions_row[key][0]
         else:
             if not df_recommendations[df_recommendations['date_str'] == str(row_index)[:10]].empty:
+                if no_of_invested == 0:
+                    raise ValueError(
+                        f'There are no investments today {str(row_index)[:10]}')
                 for key, value in row.iteritems():
                     row[key] = (1 + value) * (money_invested /
                                               no_of_invested) * positions_row[key][0]

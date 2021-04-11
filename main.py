@@ -1,7 +1,8 @@
 from datetime import datetime
 import os
-from read_data import read_data
 from pandas import pandas as pd
+
+from check_recommendations_dates import check_recommendations_dates
 from get_recommendations import get_recommendations
 from get_recommended_positions import get_recommended_positions
 from simulation import simulate_buy_and_hold, simulate_buy_and_hold_rebalanced, simulate_by_recommendations, simulate_by_recommendations_rebalanced
@@ -14,6 +15,7 @@ for dir in ['results', 'data']:
 
 start_date = '2018-01-01'
 end_date = '2021-04-07'
+# filename = 'recomm-inderes-nordnet-markets-fi.csv'
 filename = 'recomm-inderes-nordea-osakekorit.csv'
 sum_col = '-SUM-'
 
@@ -23,18 +25,16 @@ recommendations_dict = {
     'REDUCE': 0.2,
     'SELL': 0.0
 }
+
+# Load data
 df_recommendations = get_recommendations(
     filename, recommendations_dict).sort_values(by='date_str')
 tickers = df_recommendations['ticker'].unique()
+df_day_gain = get_day_gain(
+    tickers=tickers, start_date=start_date, end_date=end_date)
+df_recommendations = check_recommendations_dates(
+    df_recommendations, df_day_gain)
 
-df = pd.DataFrame(columns=tickers)
-for ticker in tickers:
-    data = read_data(ticker, start_date=start_date,
-                     end_date=end_date, only_fresh_data=False)
-    data.fillna(method='backfill')
-    df[ticker] = data['adjclose']
-
-df_day_gain = get_day_gain(df)
 df_analyzed = get_analyzed(df_day_gain, df_recommendations)
 df_buy_and_hold = simulate_buy_and_hold(df_day_gain, df_analyzed)
 df_buy_and_hold_rebalanced = simulate_buy_and_hold_rebalanced(
@@ -49,9 +49,13 @@ df_buy_and_hold_rebalanced.loc[:, sum_col] = df_buy_and_hold_rebalanced.sum(
 
 df_gains_result = pd.DataFrame(
     columns=['add', 'reduce', 'buy-hold', 'buy-hold-rebal', 'recomm', 'recomm-rebal'])
-divider = 50.0
-for add in [x / divider for x in range(1, int(divider/5), 1)]:
-    for reduce in [x / divider for x in range(0, int(add*divider)+1, 1)]:
+# divider = 50.0
+# for add in [x / divider for x in range(1, int(divider/5), 1)]:
+#     for reduce in [x / divider for x in range(0, int(add*divider)+1, 1)]:
+for add in [0, 0.02, 0.04, 0.1, 0.2, 0.4]:
+    for reduce in [0.0, 0.02, 0.04, 0.1, 0.2, 0.4]:
+        if add + reduce == 0:
+            continue
         recommendations_dict = {
             'BUY': 1.0,
             'ADD': add,
@@ -60,6 +64,8 @@ for add in [x / divider for x in range(1, int(divider/5), 1)]:
         }
         df_recommendations = get_recommendations(
             filename, recommendations_dict).sort_values(by='date_str')
+        df_recommendations = check_recommendations_dates(
+            df_recommendations=df_recommendations, df_trade_dates=df_day_gain)
         df_positions = get_recommended_positions(
             df_day_gain, df_recommendations)
         df_by_recommendations = simulate_by_recommendations(
@@ -91,8 +97,9 @@ for add in [x / divider for x in range(1, int(divider/5), 1)]:
         df_by_recommendations_rebalanced.loc[:, sum_col] = df_by_recommendations_rebalanced.sum(
             numeric_only=True, axis=1)
 
+        date_string = datetime.now().strftime("%Y-%m-%d %H.%M")
         with pd.ExcelWriter(
-                f'results/results {params} {datetime.now().strftime("%Y-%m-%d %H.%M")}.xlsx') as writer:
+                f'results/results {params} {date_string}.xlsx') as writer:
             df_buy_and_hold.to_excel(writer, sheet_name='buy-and-hold'[:30])
             df_buy_and_hold_rebalanced.to_excel(
                 writer, sheet_name='buy-and-hold-monthly-rebalanced'[:30])
@@ -105,4 +112,4 @@ for add in [x / divider for x in range(1, int(divider/5), 1)]:
             df_analyzed.to_excel(
                 writer, sheet_name='analyzed'[:30])
 
-df_gains_result.to_excel('results/results summary.xlsx')
+df_gains_result.to_excel(f'results/results summary {date_string}.xlsx')

@@ -50,10 +50,14 @@ def parse_recommendations(raw_data, recommendations_dict):
                 if last_row['ticker'] != ticker or last_row['recommendation'] != recommendation:
                     df = df.append(row)
         else:
+            if ' ' in data or ',' in data:
+                raise ValueError(
+                    f'Ticker {ticker} has erroneous line "{data}"')
             if data == '-END-':
                 return df
             if data != '':
                 ticker = data
+
     return df
 
 
@@ -71,5 +75,13 @@ if __name__ == "__main__":
     print(parse_date('1/5/2019'))
     # print(parse_date('2020-01-01'))
 
-    df = get_recommendations("recomm-inderes-nordea-osakekorit.csv")
+    recommendations_dict = {
+        'BUY': 1.0,
+        'ADD': 0.7,
+        'REDUCE': 0.2,
+        'SELL': 0.0
+    }
+
+    df = get_recommendations(
+        "recomm-inderes-nordea-osakekorit.csv", recommendations_dict=recommendations_dict)
     print(df)

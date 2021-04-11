@@ -9,6 +9,6 @@ Run with
 Results will appear in `results` folder.
 `results summary.xslx` will hold the combine bracketing results.
 
-No guarantee :)
+No guarantees given :)
 
 Written with Python 3.8.5

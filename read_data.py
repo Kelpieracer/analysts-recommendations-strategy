@@ -8,6 +8,8 @@ def read_data(ticker, start_date='2000-01-01', end_date='2100-01-01', only_fresh
     read_end_date = datetime.now().strftime("%Y-%m-%d")
     data_file_name = f'data/{ticker}_{read_end_date}.csv'
 
+    print('.', end="")
+
     try:
         if not only_fresh_data:
             df = pd.read_csv(data_file_name, index_col=0)

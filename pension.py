@@ -53,105 +53,122 @@ def get_datas(tickers):
     return datas
 
 
-df_tot = pd.DataFrame([], columns=['step', 'start_date', 'tickers', 'knives', 'buy_and_hold_gain',
-                                   'rebal_gain', 'dipper_gain', 'rebal_max_drawdown', 'dipper_max_drawdown'])
-for STEP in [4, 5, 6]:
-    for start_date in ['2015-01-02', '2015-01-05', '2015-01-06', '2015-01-07', '2015-01-08']:
+df_tot = pd.DataFrame([], columns=['step', 'start_date', 'tickers', 'knives', 'slip', 'buy_and_hold_gain',
+                                   'rebal_gain', 'dipper_gain', 'rebal_max_drawdown', 'dipper_max_drawdown', 'max_loosing_weeks'])
+
+
+for start_date in ['2015-01-02', '2015-01-05', '2015-01-06', '2015-01-07', '2015-01-08']:
+    datas = get_datas(tickers)
+    for STEP in [4, 5, 6]:
         for TICKERS in [1, 2, 3]:
             for KNIVES in [0, 1]:
+                for SLIP in [-1, 0]:
+                    print(
+                        f'STEP {STEP} start_date {start_date} TICKERS {TICKERS} KNIVES {KNIVES} SLIP {SLIP}')
 
-                datas = get_datas(tickers)
-                dipper = 1
-                hold_rebal_gain = 1
-                hold_gain = 0
-                max_draw_down = 0
-                highest_gain = 0
-                max_draw_down_rebal = 0
-                highest_gain_rebal = 0
-
-                for ticker in tickers:
-                    datas_list = list(datas[ticker]['adjclose'])
-                    hold_gain += datas_list[len(datas[tickers[0]])-STEP] / \
-                        datas_list[240]
-                hold_gain /= len(tickers)
-
-                df = pd.DataFrame([], columns=['date', 'tickers', 'rebal', 'dipper',
-                                               'rebal_gain', 'dipper_gain', 'rebal_max_drawdown', 'dipper_max_drawdown'])
-
-                for index in range(240, len(datas[tickers[0]]) - STEP - 5, STEP):
-                    scores = {}
-                    rebal = 0
+                    dipper = 1
+                    hold_rebal_gain = 1
+                    hold_gain = 0
+                    max_draw_down = 0
+                    highest_gain = 0
+                    max_draw_down_rebal = 0
+                    highest_gain_rebal = 0
+                    max_loosing_weeks = 0
+                    loosing_weeks = 0
 
                     for ticker in tickers:
                         datas_list = list(datas[ticker]['adjclose'])
-                        price_now = datas_list[index]
-                        price_1w = datas_list[index-5]
-                        # price_2w = datas_list[index-10]
-                        price_1m = datas_list[index-MONTH]
-                        # price_1m_pre = datas_list[index -
-                        #                           MONTH-5]
-                        # price_1m_aft = datas_list[index -
-                        #                           MONTH+5]
-                        # price_2m = datas_list[index -
-                        #                       2*MONTH]
-                        # price_3m = datas_list[index -
-                        #                       QUARTER_YEAR]
-                        # price_6m = datas_list[index -
-                        #                       HALF_YEAR]
-                        # price_12m = datas_list[index-YEAR]
-                        score = 0
-                        # 1W * 12 + 1M *12 BEST
-                        score += price_now/price_1w * 12
-                        # score += price_now/price_2w * 24
-                        score += price_now/price_1m * 12
-                        # score += price_now/price_1m_pre * 0
-                        # score += price_now/price_1m_aft * 0
-                        # score += price_now/price_2m * 6
-                        # score += price_now/price_3m * 4
-                        # score += price_now/price_6m * 2
-                        # score -= price_now/price_12m * 0.0
-                        # score += 1000 if price_now/price_12m > 1.5 else 0
-                        # score += 1000 if price_3m/price_12m > 1.3 else 0
-                        if not score:
-                            break
-                        rebal += datas_list[index +
-                                            STEP]/price_now
-                        scores[ticker] = score
-                    rebal_gain = rebal / len(tickers)
-                    hold_rebal_gain *= rebal_gain
-                    scores = dict(
-                        sorted(scores.items(), key=lambda item: item[1]))
-                    best_tickers = list(scores.items())[KNIVES:TICKERS+KNIVES]
-                    dipper_gain = 0
-                    for best_ticker in best_tickers:
-                        datas_list = list(datas[best_ticker[0]]['adjclose'])
-                        price_prev = datas_list[index]
-                        price_next = datas_list[index+STEP]
-                        dipper_gain += price_next / price_prev
-                    dipper_gain /= len(best_tickers)
-                    dipper *= dipper_gain
-                    highest_gain = max(highest_gain, dipper)
-                    draw_down = dipper / highest_gain - 1
-                    max_draw_down = min(draw_down, max_draw_down)
+                        hold_gain += datas_list[len(datas[tickers[0]])-STEP] / \
+                            datas_list[240]
+                    hold_gain /= len(tickers)
 
-                    highest_gain_rebal = max(
-                        highest_gain_rebal, hold_rebal_gain)
-                    draw_down_rebal = hold_rebal_gain / highest_gain_rebal - 1
-                    max_draw_down_rebal = min(
-                        draw_down_rebal, max_draw_down_rebal)
-                    date = str(datas[best_tickers[0][0]
-                                     ].index[index+STEP])[:10]
-                    ticker_str = ','.join([x[0] for x in best_tickers])
-                    df = df.append(pd.DataFrame(
-                        [[date, ticker_str, hold_rebal_gain, dipper, rebal/len(tickers), dipper_gain, max_draw_down_rebal, max_draw_down]], columns=df.columns))
-                    print(
-                        f"{date}:  {ticker_str}  {dipper_gain:.2f}  dipper: {dipper:.2f}   rebal: {hold_rebal_gain:.2f}")
+                    df = pd.DataFrame([], columns=['date', 'tickers', 'rebal', 'dipper',
+                                                   'rebal_gain', 'dipper_gain', 'rebal_max_drawdown', 'dipper_max_drawdown'])
+
+                    for index in range(240, len(datas[tickers[0]]) - STEP - 5, STEP):
+                        scores = {}
+                        rebal = 0
+
+                        for ticker in tickers:
+                            datas_list = list(datas[ticker]['adjclose'])
+                            price_now = datas_list[index+SLIP]
+                            price_1w = datas_list[index-5]
+                            # price_2w = datas_list[index-10]
+                            price_1m = datas_list[index-MONTH]
+                            # price_1m_pre = datas_list[index -
+                            #                           MONTH-5]
+                            # price_1m_aft = datas_list[index -
+                            #                           MONTH+5]
+                            # price_2m = datas_list[index -
+                            #                       2*MONTH]
+                            # price_3m = datas_list[index -
+                            #                       QUARTER_YEAR]
+                            # price_6m = datas_list[index -
+                            #                       HALF_YEAR]
+                            # price_12m = datas_list[index-YEAR]
+                            score = 0
+                            # 1W * 12 + 1M *12 BEST
+                            score += price_now/price_1w * 12
+                            # score += price_now/price_2w * 24
+                            score += price_now/price_1m * 12
+                            # score += price_now/price_1m_pre * 0
+                            # score += price_now/price_1m_aft * 0
+                            # score += price_now/price_2m * 6
+                            # score += price_now/price_3m * 4
+                            # score += price_now/price_6m * 2
+                            # score -= price_now/price_12m * 0.0
+                            # score += 1000 if price_now/price_12m > 1.5 else 0
+                            # score += 1000 if price_3m/price_12m > 1.3 else 0
+                            if not score:
+                                break
+                            rebal += datas_list[index +
+                                                STEP]/price_now
+                            scores[ticker] = score
+                        rebal_gain = rebal / len(tickers)
+                        hold_rebal_gain *= rebal_gain
+                        scores = dict(
+                            sorted(scores.items(), key=lambda item: item[1]))
+                        best_tickers = list(scores.items())[
+                            KNIVES:TICKERS+KNIVES]
+                        dipper_gain = 0
+                        for best_ticker in best_tickers:
+                            datas_list = list(
+                                datas[best_ticker[0]]['adjclose'])
+                            price_prev = datas_list[index]
+                            price_next = datas_list[index+STEP]
+                            dipper_gain += price_next / price_prev
+                        dipper_gain /= len(best_tickers)
+                        dipper *= dipper_gain
+                        if dipper_gain < rebal_gain:
+                            loosing_weeks += 1
+                        else:
+                            loosing_weeks = 0
+                        max_loosing_weeks = max(
+                            max_loosing_weeks, loosing_weeks)
+                        highest_gain = max(highest_gain, dipper)
+                        draw_down = dipper / highest_gain - 1
+                        max_draw_down = min(draw_down, max_draw_down)
+
+                        highest_gain_rebal = max(
+                            highest_gain_rebal, hold_rebal_gain)
+                        draw_down_rebal = hold_rebal_gain / highest_gain_rebal - 1
+                        max_draw_down_rebal = min(
+                            draw_down_rebal, max_draw_down_rebal)
+                        date = str(datas[best_tickers[0][0]
+                                         ].index[index+STEP])[:10]
+                        ticker_str = ','.join([x[0] for x in best_tickers])
+                        df = df.append(pd.DataFrame(
+                            [[date, ticker_str, hold_rebal_gain, dipper, rebal/len(tickers), dipper_gain, max_draw_down_rebal, max_draw_down]], columns=df.columns))
+                        # print(
+                        #     f"{date}:  {ticker_str}  {dipper_gain:.2f}  dipper: {dipper:.2f}   rebal: {hold_rebal_gain:.2f}")
+                        pass
+                    df.to_csv(f'data/dipper.csv')
+                    # print(
+                    #     f"Buy and hold  {hold_gain:.2f}    Dipper max draw_down {max_draw_down:.2f}   Rebal max draw_down {max_draw_down_rebal:.2f}")
+                    df_row = pd.DataFrame(
+                        [[STEP, start_date, TICKERS, KNIVES, SLIP, hold_gain, hold_rebal_gain, dipper, max_draw_down_rebal, max_draw_down, max_loosing_weeks]], columns=df_tot.columns)
+                    df_tot = df_tot.append(df_row)
+                    print(df_row)
                     pass
-                df.to_csv(f'data/dipper.csv')
-                print(
-                    f"Buy and hold  {hold_gain:.2f}    Dipper max draw_down {max_draw_down:.2f}   Rebal max draw_down {max_draw_down_rebal:.2f}")
-                df_tot = df_tot.append(pd.DataFrame(
-                    [[STEP, start_date, TICKERS, KNIVES, hold_gain, hold_rebal_gain, dipper, draw_down_rebal, draw_down]], columns=df_tot.columns))
-                pass
 
 df_tot.to_csv('data/dipper_tot.csv')

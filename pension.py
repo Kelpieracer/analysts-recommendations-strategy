@@ -3,12 +3,14 @@ from read_data import read_data
 from datetime import date, datetime
 from symbol_dict import symbol_dict
 
-tickers = ["ELISA.HE", "FORTUM.HE", "KEMIRA.HE", "KESKOB.HE", "KNEBV.HE",
-           "MOCORP.HE", "NESTE.HE", "NOKIA.HE", "TYRES.HE",
-           "ORNBV.HE", "SAMPO.HE", "STERV.HE", "UPM.HE", "WRT1V.HE"]
+# tickers = ["ELISA.HE", "FORTUM.HE", "KEMIRA.HE", "KESKOB.HE", "KNEBV.HE",
+#            "MOCORP.HE", "NESTE.HE", "NOKIA.HE", "TYRES.HE",
+#            "ORNBV.HE", "SAMPO.HE", "STERV.HE", "UPM.HE", "WRT1V.HE"]
 
-# tickers = ["^OMXH25", "XDN0.DE", "INDA", "IQQQ.DE", "500E.AS",
-#            "EUNL.DE", "XDWD.DE", "DBX9.DE", "R2US.MI"]
+tickers = [
+    "EFNL", "XDN0.DE", "EWD", "INDA", "MCHI", "500E.AS",
+    "EUNL.DE", "XDWD.DE", "DBX9.DE", "EZU"
+]
 
 # tickers = [x['symbol'] for x in symbol_dict][-20:]
 
@@ -19,17 +21,17 @@ companies = ["Volvo", "ABB", "Securitas", "Telia", "Hennes",
              "ORKLA", "Electrolux", "ICA", "NORSK"]
 # tickers = [x['symbol'] for x in symbol_dict if x['company'] in companies]
 
-MONTH = 21
+MONTH = 20
 QUARTER_YEAR = 60
 HALF_YEAR = 120
 YEAR = 240
 STEP = 5
 
-TICKERS = 2
+TICKERS = 1
 KNIVES = 0
 
 
-start_date = '2015-01-01'
+start_date = '2015-01-05'
 end_date = '2021-07-16'
 
 
@@ -77,6 +79,8 @@ for index in range(240, len(datas[tickers[0]]) - STEP - 5, STEP):
         price_1w = datas[ticker].iloc[index-5]['adjclose']
         price_2w = datas[ticker].iloc[index-10]['adjclose']
         price_1m = datas[ticker].iloc[index-MONTH]['adjclose']
+        price_1m_pre = datas[ticker].iloc[index-MONTH-5]['adjclose']
+        price_1m_aft = datas[ticker].iloc[index-MONTH+5]['adjclose']
         price_2m = datas[ticker].iloc[index-2*MONTH]['adjclose']
         price_3m = datas[ticker].iloc[index-QUARTER_YEAR]['adjclose']
         price_6m = datas[ticker].iloc[index-HALF_YEAR]['adjclose']
@@ -86,6 +90,8 @@ for index in range(240, len(datas[tickers[0]]) - STEP - 5, STEP):
         score += price_now/price_1w * 12
         # score += price_now/price_2w * 24
         score += price_now/price_1m * 12
+        score += price_now/price_1m_pre * 0
+        score += price_now/price_1m_aft * 0
         # score += price_now/price_2m * 6
         # score += price_now/price_3m * 4
         # score += price_now/price_6m * 2
@@ -96,7 +102,8 @@ for index in range(240, len(datas[tickers[0]]) - STEP - 5, STEP):
             break
         rebal += datas[ticker].iloc[index+STEP]['adjclose']/price_now
         scores[ticker] = score
-    hold_rebal_gain *= rebal / len(tickers)
+    rebal_gain = rebal / len(tickers)
+    hold_rebal_gain *= rebal_gain
     scores = dict(sorted(scores.items(), key=lambda item: item[1]))
     best_tickers = list(scores.items())[KNIVES:TICKERS+KNIVES]
     dipper_gain = 0

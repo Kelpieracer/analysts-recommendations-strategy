@@ -16,7 +16,8 @@ for dir in ['results', 'data']:
 start_date = '2018-01-01'
 end_date = '2021-04-07'
 # filename = 'recomm-inderes-nordnet-markets-fi.csv'
-filename = 'recomm-inderes-nordea-osakekorit.csv'
+# filename = 'recomm-inderes-nordea-osakekorit.csv'
+filename = 'recomm-inderes-all.csv'
 sum_col = '-SUM-'
 
 recommendations_dict = {
@@ -52,8 +53,8 @@ df_gains_result = pd.DataFrame(
 # divider = 50.0
 # for add in [x / divider for x in range(1, int(divider/5), 1)]:
 #     for reduce in [x / divider for x in range(0, int(add*divider)+1, 1)]:
-for add in [0, 0.02, 0.04, 0.1, 0.2, 0.4]:
-    for reduce in [0.0, 0.02, 0.04, 0.1, 0.2, 0.4]:
+for add in [0.01]:
+    for reduce in [0]:
         if add + reduce == 0:
             continue
         recommendations_dict = {

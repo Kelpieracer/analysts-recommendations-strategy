@@ -11,6 +11,7 @@ def read_data(ticker, start_date='2000-01-01', end_date='2100-01-01', only_fresh
     try:
         if not only_fresh_data:
             df = pd.read_csv(data_file_name, index_col=0)
+            df = df.fillna(method="ffill")
             df.index = df.index.map(lambda x: datetime.strptime(x, "%Y-%m-%d"))
         if len(df) <= 0:
             raise Exception("No such file")

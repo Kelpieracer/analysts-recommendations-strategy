@@ -4,7 +4,7 @@ from datetime import date
 import codecs
 
 recommendations_in_finnish = {'Osta': 'BUY',
-                              'Lisää': 'ADD', 'Vähennä': 'REDUCE', 'Myy': 'SELL'}
+                              'Lisää': 'ADD', 'Vähennä': 'REDUCE', 'Myy': 'SELL', 'Pidä': 'ADD'}
 
 
 def parse_date(raw_date):
@@ -13,7 +13,8 @@ def parse_date(raw_date):
     elif '/' in raw_date:
         raw_date_split = raw_date.split('/')
     else:
-        raise ValueError('Date value is not of form mm/dd/yyyy or mm.dd.yyyy')
+        raise ValueError(
+            f'Date value is not of form mm/dd/yyyy or mm.dd.yyyy: {raw_date}')
     (day, month, year) = map(lambda x: int(x), raw_date_split)
     d = date(year, month, day)
     return d.strftime('%Y-%m-%d')
@@ -25,13 +26,14 @@ def parse_recommendation_text(raw_recommendation, recommendations_dict):
     return recommendations_dict[recommendation]
 
 
-def parse_recommendations(raw_data, recommendations_dict):
+def parse_recommendations(raw_datas, recommendations_dict):
     columns = ['date_str', 'recommendation', 'ticker']
     df = pd.DataFrame(columns=columns)
     ticker = ''
-    for data in raw_data['data']:
-        if '\t' in data:
-            data_splitted = data.split('\t')
+    for raw_data in raw_datas['data']:
+        data = raw_data.replace('\t', ' ')
+        if ' ' in data:
+            data_splitted = data.split(' ')
             date_str = parse_date(data_splitted[0])
             if(ticker == ''):
                 raise SyntaxError(

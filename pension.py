@@ -12,6 +12,8 @@ tickers = [
     "EUNL.DE", "XDWD.DE", "DBX9.DE", "EZU"
 ]
 
+# tickers = [
+#     "EFNL", "XDN0.DE"]
 # tickers = [x['symbol'] for x in symbol_dict][-20:]
 
 companies = ["Volvo", "ABB", "Securitas", "Telia", "Hennes",
@@ -61,8 +63,8 @@ df_tot = pd.DataFrame([], columns=['step', 'start_date', 'tickers', 'knives', 's
 writer = pd.ExcelWriter('results/dipper_sheets.xlsx', engine='xlsxwriter')
 for start_date in ['2015-01-02', '2015-01-05', '2015-01-06', '2015-01-07', '2015-01-08']:
     datas = get_datas(tickers)
-    for STEP in [20]:
-        for TICKERS in [2]:
+    for STEP in [5]:
+        for TICKERS in [1]:
             for KNIVES in [0]:
                 for SLIP in [-1, 0]:
                     for MULTI in [0]:
@@ -112,7 +114,7 @@ for start_date in ['2015-01-02', '2015-01-05', '2015-01-06', '2015-01-07', '2015
                                 price_12m = datas_list[index-YEAR]
                                 score = 0
                                 # 1W * 12 + 1M *12 BEST
-                                # score += price_now/price_1w * MULTI
+                                score += price_now/price_1w
                                 # score += price_now/price_2w * 24
                                 score += price_now/price_1m
                                 # score += price_now/price_1m_pre * 0

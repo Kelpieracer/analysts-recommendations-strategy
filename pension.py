@@ -71,24 +71,28 @@ def get_datas(tickers, start_date, end_date):
     return df.fillna(method='bfill')
 
 
-df_tot = pd.DataFrame([], columns=['step', 'start_date', 'W1', 'M3', 'M6', 'M12', 'buy_and_hold_gain',
+df_tot = pd.DataFrame([], columns=['step', 'start_date', 'tickers', 'W1', 'M3', 'M6', 'slip', 'buy_and_hold_gain',
                                    'rebal_gain', 'dipper_gain', 'rebal_max_drawdown', 'dipper_max_drawdown', 'max_loosing_weeks',
                                    'benefit_over_bh', 'yearly_gain_bh', 'yearly_gain_rebal', 'yearly_gain_dipper'
                                    ])
 
 writer = pd.ExcelWriter('results/dipper_sheets.xlsx', engine='xlsxwriter')
 
-
-for start_date in [f'{start_year}-01-02', f'{start_year}-01-03', f'{start_year}-01-04', f'{start_year}-01-07', f'{start_year}-01-08']:
+start_dates = {'2013': ['2013-01-02', f'2013-01-03',
+                        f'2013-01-04', f'2013-01-07', f'2013-01-08'],
+               '2014': ['2013-01-02', f'2013-01-03',
+                        f'2013-01-07', f'2013-01-08', f'2013-01-09'],
+               }
+for start_date in start_dates[start_year]:
     datas = get_datas(tickers, start_date, end_date)
     for STEP in [20]:
-        for TICKERS in [3]:
-            for W1 in [-3, -2, -1, 0]:
-                for M3 in [0.3, 0.5, 0.8]:
-                    for M6 in [1.5, 2, 3]:
-                        for M12 in [0]:
+        for TICKERS in [2]:
+            for W1 in [-2]:
+                for M3 in [0.7]:
+                    for M6 in [2]:
+                        for SLIP in [0, 1, 2]:
                             print(
-                                f'STEP {STEP} start_date {start_date} MULT {[W1,M3,M6,M12]}')
+                                f'STEP {STEP} start_date {start_date} slip {SLIP} MULT {[W1,M3,M6]}')
 
                             dipper = 1
                             hold_rebal_gain = 1
@@ -116,7 +120,7 @@ for start_date in [f'{start_year}-01-02', f'{start_year}-01-03', f'{start_year}-
 
                                 for ticker in tickers:
                                     datas_list = list(datas[ticker])
-                                    price_now = datas_list[index+0]
+                                    price_now = datas_list[index-SLIP]
                                     # NOTE NOTE!!
                                     # price_1STEP = datas_list[index-STEP]
                                     price_1w = datas_list[index-5]
@@ -145,7 +149,7 @@ for start_date in [f'{start_year}-01-02', f'{start_year}-01-03', f'{start_year}-
                                     score += price_now/price_2m * 0
                                     score -= price_now/price_3m * M3
                                     score -= price_now/price_6m * M6
-                                    score -= price_now/price_12m * M12
+                                    score -= price_now/price_12m * 0
                                     # score += 1000 if price_now/price_12m > 1.5 else 0
                                     # score += 1000 if price_3m/price_12m > 1.3 else 0
                                     rebal += datas_list[index +
@@ -191,12 +195,12 @@ for start_date in [f'{start_year}-01-02', f'{start_year}-01-03', f'{start_year}-
                                 # print(
                                 #     f"{date}:  {ticker_str}  {dipper_gain:.2f}  dipper: {dipper:.2f}   rebal: {hold_rebal_gain:.2f}")
                                 pass
-                            sheet_name = f'{start_date}-{(W1, M3, M6, M12)}'
+                            sheet_name = f'{start_date}-s{SLIP}-{(W1, M3, M6)}'
                             df.to_excel(writer, sheet_name=sheet_name)
                             # print(
                             #     f"Buy and hold  {hold_gain:.2f}    Dipper max draw_down {max_draw_down:.2f}   Rebal max draw_down {max_draw_down_rebal:.2f}")
                             df_row = pd.DataFrame(
-                                [[STEP, start_date, W1, M3, M6, M12, hold_gain, hold_rebal_gain, dipper, max_draw_down_rebal, max_draw_down, max_loosing_weeks,
+                                [[STEP, start_date, TICKERS, W1, M3, M6, SLIP, hold_gain, hold_rebal_gain, dipper, max_draw_down_rebal, max_draw_down, max_loosing_weeks,
                                   dipper/hold_gain, yearly_profit(hold_gain, end_index-start_index), yearly_profit(hold_rebal_gain, end_index-start_index), yearly_profit(dipper, end_index-start_index)]], columns=df_tot.columns)
                             df_tot = df_tot.append(df_row)
                             print(df_row)

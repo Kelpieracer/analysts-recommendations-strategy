@@ -102,8 +102,8 @@ start_dates = {'2013': ['2013-01-02', f'2013-01-03',
 for start_date in start_dates[start_year][:1]:
     datas = get_datas(tickers, start_date, end_date)
     for STEP in [20]:
-        for day_add in range(0, 5):
-            for TICKERS in [3]:
+        for day_add in range(0, STEP, 1):
+            for TICKERS in [1, 2, 3]:
                 # balanced long momentum 0, -2, 1, 0.4, 1 (balanced by M36) benefit over rebal 1.44
                 # dipper -0.2, -1.5, 0.7, 0.2, 0 benefit over rebal 1.61
                 # dipper -0.2, -1.5, 0.7, 0.2, 0.3 benefit over rebal 1.63
@@ -130,8 +130,9 @@ for start_date in start_dates[start_year][:1]:
                                         loosing_weeks = 0
 
                                         df = pd.DataFrame([], columns=['date', 'tickers', 'rebal', 'dipper',
-                                                                       'rebal_gain', 'dipper_gain', 'rebal_max_drawdown', 'dipper_max_drawdown', 'benefit'])
-                                        start_index = STEP + day_add
+                                                                       'rebal_gain', 'dipper_gain', 'rebal_max_drawdown', 'dipper_max_drawdown', 'benefit'] +
+                                                          tickers + [f'I_{t}' for t in tickers])
+                                        start_index = day_add + 3 * YEAR + 1
                                         end_index = len(
                                             datas[tickers[0]]) - STEP - 1
 
@@ -149,23 +150,28 @@ for start_date in start_dates[start_year][:1]:
                                             for ticker in tickers:
                                                 datas_list = list(
                                                     datas[ticker])
-                                                price_now = datas_list[index-SLIP]
+                                                price_now = datas_list[max(
+                                                    0, index-SLIP)]
                                                 # NOTE NOTE!!
                                                 # price_1STEP = datas_list[index-STEP]
-                                                price_1w = datas_list[index-5]
-                                                price_1m = datas_list[index-MONTH]
+                                                price_1w = datas_list[max(
+                                                    0, index-5)]
+                                                price_1m = datas_list[max(
+                                                    0, index-MONTH)]
                                                 # price_1m_pre = datas_list[index -
                                                 #                           MONTH-5]
                                                 # price_1m_aft = datas_list[index -
                                                 #                           MONTH+5]
-                                                price_2m = datas_list[index -
-                                                                      2*MONTH]
+                                                price_2m = datas_list[max(0, index -
+                                                                          2*MONTH)]
                                                 price_3m = datas_list[index -
                                                                       QUARTER_YEAR]
-                                                price_6m = datas_list[index -
-                                                                      HALF_YEAR]
-                                                price_12m = datas_list[index-YEAR]
-                                                price_36m = datas_list[index-3*YEAR]
+                                                price_6m = datas_list[max(0, index -
+                                                                          HALF_YEAR)]
+                                                price_12m = datas_list[max(
+                                                    0, index-YEAR)]
+                                                price_36m = datas_list[max(
+                                                    0, index-3*YEAR)]
                                                 score = 0
                                                 # 1W * 12 + 1M *12 BEST
                                                 # score += price_now/price_1STEP * MULTI_A
@@ -232,9 +238,14 @@ for start_date in start_dates[start_year][:1]:
                                                              ].index[index+STEP])[:10]
                                             ticker_str = ','.join(
                                                 [x[0] for x in best_tickers])
+
+                                            best_tickers_tickers = [
+                                                t[0] for t in best_tickers]
+
                                             df = df.append(pd.DataFrame(
                                                 [[date, ticker_str, hold_rebal_gain, dipper, rebal/len(tickers), dipper_gain, max_draw_down_rebal,
-                                                    max_draw_down, dipper/hold_rebal_gain - 1]], columns=df.columns))
+                                                    max_draw_down, dipper/hold_rebal_gain - 1] +
+                                                 list(datas.iloc[index]) + [(datas[t][index + STEP] / datas[t][index] if t in best_tickers_tickers else "") for t in tickers]], columns=df.columns))
                                             # print(
                                             #     f"{date}:  {ticker_str}  {dipper_gain:.2f}  dipper: {dipper:.2f}   rebal: {hold_rebal_gain:.2f}")
                                             pass

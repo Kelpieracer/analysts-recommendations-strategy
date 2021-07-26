@@ -22,9 +22,11 @@ tickers = [
     "X026.DE",  # Euro small cap
     "FIW",  # Water ETF
     "EEM",  # Emerging markets
-    # "WOSC.SW",  # World small cap
+    "EEMS",  # Emerging markets small cap
+    "WOSC.SW",  # World small cap
     "PEZ",  # Consumer cyclicals momentum
     "PBD",  # Global clean energy ETF
+    # "USRT",  # REIT ETF
 ]
 
 # tickers = [
@@ -49,7 +51,7 @@ M1 = 0
 
 start_year = '2016'
 
-end_date = '2021-07-16'
+end_date = '2021-07-26'
 
 
 def yearly_profit(gain, days):
@@ -101,20 +103,25 @@ start_dates = {'2013': ['2013-01-02', f'2013-01-03',
                }
 for start_date in start_dates[start_year][:1]:
     datas = get_datas(tickers, start_date, end_date)
-    for STEP in [20]:
+    for STEP in [MONTH]:
         for day_add in range(0, STEP, 1):
-            for TICKERS in [1, 2, 3]:
+            for TICKERS in [1, 2]:
                 # balanced long momentum 0, -2, 1, 0.4, 1 (balanced by M36) benefit over rebal 1.44
                 # dipper -0.2, -1.5, 0.7, 0.2, 0 benefit over rebal 1.61
                 # dipper -0.2, -1.5, 0.7, 0.2, 0.3 benefit over rebal 1.63
                 # pure momentum 0, 0.1, 0.3, 1, 1 benefit over rebal 1.04
                 # short momentum 0, 0, 0, 1, 0 benefit over rebal 1.09
                 # balanced short momentum 0, 0, 0, 1, 0 benefit over rebal 1.17
-                for M36 in [-0.2]:  # 0
-                    for M12 in [-1.5]:  # -2
-                        for M3 in [0.7]:  # 1
-                            for M1 in [0.2]:  # 0 .4
-                                for W1 in [0.3]:  # 1
+                # for M36 in [-0.2]:  # 0
+                #     for M12 in [-1.5]:  # -2
+                #         for M3 in [0.7]:  # 1
+                #             for M1 in [0.2]:  # 0 .4
+                #                 for W1 in [0.3]:  # 1
+                for M36 in [0]:  # 0
+                    for M12 in [0.1]:  # -2
+                        for M3 in [0.3]:  # 1
+                            for M1 in [1]:  # 0 .4
+                                for W1 in [1]:  # 1
                                     for SLIP in [1, 2]:
                                         print(
                                             f'STEP {STEP} start_date {start_date} slip {SLIP} MULT {[M12,M3,M36]}')

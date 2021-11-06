@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+# from stockstats import StockDataFrame
 from read_data import read_data
 from datetime import date, datetime
 from symbol_dict import symbol_dict
@@ -40,6 +41,7 @@ companies = ["Volvo", "ABB", "Securitas", "Telia", "Hennes",
              "ORKLA", "Electrolux", "ICA", "NORSK"]
 # tickers = [x['symbol'] for x in symbol_dict if x['company'] in companies]
 
+WEEK = 5
 MONTH = 21
 QUARTER_YEAR = 63
 HALF_YEAR = 129
@@ -49,9 +51,27 @@ STEP = 5
 TICKERS = 2
 M1 = 0
 
-start_year = '2016'
+start_year = '2013'
 
-end_date = '2021-07-26'
+end_date = '2021-09-22'
+
+
+def downside_risk(returns, risk_free=0, samples_per_year=YEAR):
+    adj_returns = returns - risk_free
+    sqr_downside = np.square(np.clip(adj_returns, np.NINF, 0))
+    return np.sqrt(np.nanmean(sqr_downside) * samples_per_year)
+
+
+def sortino(returns, risk_free=0, samples_per_year=YEAR):
+    adj_returns = returns - risk_free
+    drisk = downside_risk(adj_returns)
+    if drisk == 0:
+        return np.nan
+    return (np.nanmean(adj_returns) * np.sqrt(samples_per_year)) / drisk
+
+
+def sharpe(returns, samples_per_year):
+    return returns.mean()/returns.std() * np.sqrt(YEAR/STEP)
 
 
 def yearly_profit(gain, days):
@@ -87,29 +107,44 @@ def get_datas(tickers, start_date, end_date):
     return df.fillna(method='bfill')
 
 
-df_tot = pd.DataFrame([], columns=['step', 'start_date', 'day_add', 'tickers', 'W1', 'M1', 'M3', 'M12', 'M36', 'slip', 'buy_and_hold_gain',
+df_tot = pd.DataFrame([], columns=['step', 'start_date', 'day_add', 'tickers', 'W1', 'M1', 'M3', 'M12', 'M36', 'slip', 'sharpe_rebal', 'sharpe_dipper', 'sharpe_benefit',
+                                   'sor_rebal', 'sor_dipper', 'sor_benefit', 'buy_and_hold_gain',
                                    'rebal_gain', 'dipper_gain', 'rebal_max_drawdown', 'dipper_max_drawdown', 'max_loosing_weeks',
                                    'benefit_over_bh', 'benefit_over_rebal', 'yearly_gain_bh', 'yearly_gain_rebal', 'yearly_gain_dipper'
                                    ])
 
-writer = pd.ExcelWriter('results/dipper_sheets.xlsx', engine='xlsxwriter')
-
-start_dates = {'2013': ['2013-01-02', f'2013-01-03',
+start_dates = {'2011': ['2011-01-03'],
+               '2012': ['2011-01-02'],
+               '2013': ['2013-01-02', f'2013-01-03',
                         f'2013-01-04', f'2013-01-07', f'2013-01-08'],
                '2014': ['2013-01-02', f'2013-01-03',
                         f'2013-01-07', f'2013-01-08', f'2013-01-09'],
                '2016': ['2013-01-04', f'2013-01-05',
                         f'2013-01-07', f'2013-01-08', f'2013-01-09'],
                }
+
+
+df_collection = pd.DataFrame([])
+
+# CHANGE NAME
+fname = 'momentum 0 1 0 0 0 1ticker monthly bracketing 3M'
+writer = pd.ExcelWriter(
+    f'results/{fname} dipper_sheets.xlsx', engine='xlsxwriter')
+# CHANGE NAME
+
 for start_date in start_dates[start_year][:1]:
     datas = get_datas(tickers, start_date, end_date)
     for STEP in [MONTH]:
-        for day_add in range(0, STEP, 1):
-            for TICKERS in [1, 2]:
+        for day_add in range(0, MONTH, 1):
+            for TICKERS in [1]:
                 # balanced long momentum 0, -2, 1, 0.4, 1 (balanced by M36) benefit over rebal 1.44
                 # dipper -0.2, -1.5, 0.7, 0.2, 0 benefit over rebal 1.61
                 # dipper -0.2, -1.5, 0.7, 0.2, 0.3 benefit over rebal 1.63
+                # dipper 0, -1.5, 0.7, 0.2, 0.3 benefit over rebal 2.26 OFFICIAL
+                # dipper 0, -1, 0.7, 0.2, 0.3 benefit over rebal 2.15 OFFICIAL
+                # pure momentum 0, 0, 0.3, 1, 1 benefit over rebal OFFICIAL
                 # pure momentum 0, 0.1, 0.3, 1, 1 benefit over rebal 1.04
+                # pure momentum 0, 1, 0, 0, 0 benefit over rebal 1.42
                 # short momentum 0, 0, 0, 1, 0 benefit over rebal 1.09
                 # balanced short momentum 0, 0, 0, 1, 0 benefit over rebal 1.17
                 # for M36 in [-0.2]:  # 0
@@ -118,11 +153,11 @@ for start_date in start_dates[start_year][:1]:
                 #             for M1 in [0.2]:  # 0 .4
                 #                 for W1 in [0.3]:  # 1
                 for M36 in [0]:  # 0
-                    for M12 in [0.1]:  # -2
-                        for M3 in [0.3]:  # 1
-                            for M1 in [1]:  # 0 .4
-                                for W1 in [1]:  # 1
-                                    for SLIP in [1, 2]:
+                    for M12 in [1]:  # -1
+                        for M3 in [0]:  # 0.7
+                            for M1 in [0]:  # 0.2
+                                for W1 in [0]:  # 0.3
+                                    for SLIP in [1]:
                                         print(
                                             f'STEP {STEP} start_date {start_date} slip {SLIP} MULT {[M12,M3,M36]}')
 
@@ -139,7 +174,7 @@ for start_date in start_dates[start_year][:1]:
                                         df = pd.DataFrame([], columns=['date', 'tickers', 'rebal', 'dipper',
                                                                        'rebal_gain', 'dipper_gain', 'rebal_max_drawdown', 'dipper_max_drawdown', 'benefit'] +
                                                           tickers + [f'I_{t}' for t in tickers])
-                                        start_index = day_add + 3 * YEAR + 1
+                                        start_index = day_add + 1 * YEAR
                                         end_index = len(
                                             datas[tickers[0]]) - STEP - 1
 
@@ -169,16 +204,16 @@ for start_date in start_dates[start_year][:1]:
                                                 #                           MONTH-5]
                                                 # price_1m_aft = datas_list[index -
                                                 #                           MONTH+5]
-                                                price_2m = datas_list[max(0, index -
-                                                                          2*MONTH)]
+                                                # price_2m = datas_list[max(0, index -
+                                                #                           2*MONTH)]
                                                 price_3m = datas_list[index -
                                                                       QUARTER_YEAR]
-                                                price_6m = datas_list[max(0, index -
-                                                                          HALF_YEAR)]
+                                                # price_6m = datas_list[max(0, index -
+                                                #                           HALF_YEAR)]
                                                 price_12m = datas_list[max(
                                                     0, index-YEAR)]
-                                                price_36m = datas_list[max(
-                                                    0, index-3*YEAR)]
+                                                # price_36m = datas_list[max(
+                                                #     0, index-3*YEAR)]
                                                 score = 0
                                                 # 1W * 12 + 1M *12 BEST
                                                 # score += price_now/price_1STEP * MULTI_A
@@ -188,16 +223,15 @@ for start_date in start_dates[start_year][:1]:
                                                 # score += price_now/price_1m_aft * 0
                                                 # score += price_now/price_2m * 6
 
-                                                score_bal = price_now/price_36m
-                                                score_bal = 1
-
-                                                score += price_now/price_1w * W1 / score_bal
-                                                score += price_now/price_1m * M1 / score_bal
-                                                score += price_now/price_2m * 0
-                                                score += price_now/price_3m * M3 / score_bal
+                                                score += ((price_now /
+                                                           price_1w) ** 1) * W1
+                                                score += (price_now /
+                                                          price_1m)**1 * M1
+                                                # score += price_now/price_2m * 0
+                                                score += price_now/price_3m * M3
                                                 # score += price_now/price_6m * M6
-                                                score += price_now/price_12m * M12 / score_bal
-                                                score += price_now/price_36m * M36 / score_bal
+                                                score += price_now/price_12m * M12
+                                                # score += price_now/price_36m * M36
 
                                                 # score += 10 * \
                                                 #     sum([1 for p in [
@@ -251,7 +285,7 @@ for start_date in start_dates[start_year][:1]:
 
                                             df = df.append(pd.DataFrame(
                                                 [[date, ticker_str, hold_rebal_gain, dipper, rebal/len(tickers), dipper_gain, max_draw_down_rebal,
-                                                    max_draw_down, dipper/hold_rebal_gain - 1] +
+                                                    max_draw_down, dipper/hold_rebal_gain] +
                                                  list(datas.iloc[index]) + [(datas[t][index + STEP] / datas[t][index] if t in best_tickers_tickers else "") for t in tickers]], columns=df.columns))
                                             # print(
                                             #     f"{date}:  {ticker_str}  {dipper_gain:.2f}  dipper: {dipper:.2f}   rebal: {hold_rebal_gain:.2f}")
@@ -261,12 +295,36 @@ for start_date in start_dates[start_year][:1]:
                                             writer, sheet_name=sheet_name)
                                         # print(
                                         #     f"Buy and hold  {hold_gain:.2f}    Dipper max draw_down {max_draw_down:.2f}   Rebal max draw_down {max_draw_down_rebal:.2f}")
-                                        df_row = pd.DataFrame(
-                                            [[STEP, start_date, day_add, TICKERS, W1, M1, M3, M12, M36, SLIP, hold_gain, hold_rebal_gain, dipper, max_draw_down_rebal, max_draw_down, max_loosing_weeks,
-                                              dipper/hold_gain, dipper/hold_rebal_gain,  yearly_profit(hold_gain, end_index-start_index), yearly_profit(hold_rebal_gain, end_index-start_index), yearly_profit(dipper, end_index-start_index)]], columns=df_tot.columns)
+                                        r_rebal = df['rebal'].diff()
+                                        r_dipper = df['dipper'].diff()
+                                        r_benefit = df['benefit'].diff()
+                                        sr_rebal = sharpe(r_rebal, YEAR/STEP)
+                                        sr_dipper = sharpe(r_dipper, YEAR/STEP)
+                                        sr_benefit = sharpe(
+                                            r_benefit, YEAR/STEP)
+                                        sor_rebal = sortino(
+                                            r_rebal, 0, YEAR/STEP)
+                                        sor_dipper = sortino(
+                                            r_dipper, 0, YEAR/STEP)
+                                        sor_benefit = sortino(
+                                            r_benefit, 0, YEAR/STEP)
+                                        df_row = pd.DataFrame([[STEP, start_date, day_add, TICKERS, W1, M1, M3, M12, M36, SLIP, sr_rebal, sr_dipper, sr_benefit, sor_rebal, sor_dipper, sor_benefit, hold_gain, hold_rebal_gain, dipper, max_draw_down_rebal, max_draw_down, max_loosing_weeks,
+                                                                dipper/hold_gain, dipper/hold_rebal_gain,  yearly_profit(hold_gain, end_index-start_index), yearly_profit(hold_rebal_gain, end_index-start_index), yearly_profit(dipper, end_index-start_index)]], columns=df_tot.columns)
                                         df_tot = df_tot.append(df_row)
+                                        if df_collection.size == 0:
+                                            df_collection['date'] = df['date']
+                                        benefit_list = list(
+                                            df['benefit'])
+                                        benefit_list = benefit_list + \
+                                            (benefit_list[-1:] *
+                                             (len(df_collection) - len(benefit_list)))
+                                        df_collection[sheet_name] = benefit_list[0:len(
+                                            df_collection)]
                                         print(df_row)
                                         pass
+df_collection = df_collection.assign(
+    mean=df_collection.mean(axis=1))
+df_collection.to_excel(f'results/{fname} collection.xlsx')
 writer.save()
-df_tot.to_excel('results/dipper_tot.xlsx')
-datas.to_excel('results/datas.xlsx')
+df_tot.to_excel(f'results/{fname} dipper_tot.xlsx')
+datas.to_excel(f'results/{fname} datas.xlsx')

@@ -53,7 +53,7 @@ M1 = 0
 
 start_year = '2013'
 
-end_date = '2021-09-22'
+end_date = '2021-11-22'
 
 
 def downside_risk(returns, risk_free=0, samples_per_year=YEAR):
@@ -127,16 +127,16 @@ start_dates = {'2011': ['2011-01-03'],
 df_collection = pd.DataFrame([])
 
 # CHANGE NAME
-fname = 'momentum 0 1 0 0 0 1ticker monthly bracketing 3M'
+fname = 'weekly w trend 2 tickers'
 writer = pd.ExcelWriter(
     f'results/{fname} dipper_sheets.xlsx', engine='xlsxwriter')
 # CHANGE NAME
 
 for start_date in start_dates[start_year][:1]:
     datas = get_datas(tickers, start_date, end_date)
-    for STEP in [MONTH]:
-        for day_add in range(0, MONTH, 1):
-            for TICKERS in [1]:
+    for STEP in [WEEK]:
+        for day_add in range(0, WEEK, 1):
+            for TICKERS in [2]:
                 # balanced long momentum 0, -2, 1, 0.4, 1 (balanced by M36) benefit over rebal 1.44
                 # dipper -0.2, -1.5, 0.7, 0.2, 0 benefit over rebal 1.61
                 # dipper -0.2, -1.5, 0.7, 0.2, 0.3 benefit over rebal 1.63
@@ -153,10 +153,10 @@ for start_date in start_dates[start_year][:1]:
                 #             for M1 in [0.2]:  # 0 .4
                 #                 for W1 in [0.3]:  # 1
                 for M36 in [0]:  # 0
-                    for M12 in [1]:  # -1
-                        for M3 in [0]:  # 0.7
-                            for M1 in [0]:  # 0.2
-                                for W1 in [0]:  # 0.3
+                    for M12 in [0]:  # -1
+                        for M3 in [0.0]:  # 0.7
+                            for M1 in [0.0]:  # 0.2
+                                for W1 in [-0.3]:  # 0.3
                                     for SLIP in [1]:
                                         print(
                                             f'STEP {STEP} start_date {start_date} slip {SLIP} MULT {[M12,M3,M36]}')
